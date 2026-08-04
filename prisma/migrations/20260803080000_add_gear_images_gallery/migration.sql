@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "GearItem" ADD COLUMN "images" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

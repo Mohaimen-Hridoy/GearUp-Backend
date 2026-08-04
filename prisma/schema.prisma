@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String        @id @default(cuid())
+  name            String
+  email           String        @unique
+  password        String
+  role            Role
+  status          UserStatus    @default(ACTIVE)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  providedGear    GearItem[]    @relation("ProviderGearItems")
+  customerOrders  RentalOrder[] @relation("CustomerOrders")
+  providerReviews Review[]      @relation("CustomerReviews")
+}
+
+model Category {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  slug      String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  gearItems GearItem[]
+}
+
+model GearItem {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  brand       String
+  pricePerDay Decimal       @db.Decimal(10, 2)
+  stock       Int           @default(1)
+  isAvailable Boolean       @default(true)
+  imageUrl    String?
+  images      String[]      @default([])
+  providerId  String
+  categoryId  String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  category    Category      @relation(fields: [categoryId], references: [id])
+  provider    User          @relation("ProviderGearItems", fields: [providerId], references: [id], onDelete: Cascade)
+  orders      RentalOrder[]
+  reviews     Review[]
+}
+
+model RentalOrder {
+  id         String            @id @default(cuid())
+  customerId String
+  gearItemId String
+  startDate  DateTime
+  endDate    DateTime
+  totalPrice Decimal           @db.Decimal(10, 2)
+  status     RentalOrderStatus @default(PLACED)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  payment    Payment?
+  customer   User              @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: Cascade)
+  gearItem   GearItem          @relation(fields: [gearItemId], references: [id])
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  transactionId   String        @unique
+  rentalOrderId   String        @unique
+  amount          Decimal       @db.Decimal(10, 2)
+  provider        String
+  status          PaymentStatus @default(PENDING)
+  paymentIntentId String?
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  rentalOrder     RentalOrder   @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  customerId String
+  gearItemId String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  customer   User     @relation("CustomerReviews", fields: [customerId], references: [id], onDelete: Cascade)
+  gearItem   GearItem @relation(fields: [gearItemId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  CUSTOMER
+  PROVIDER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum RentalOrderStatus {
+  PLACED
+  CONFIRMED
+  CANCELLED
+  PAID
+  PICKED_UP
+  RETURNED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
