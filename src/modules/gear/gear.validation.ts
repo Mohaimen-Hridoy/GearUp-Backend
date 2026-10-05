@@ -23,10 +23,12 @@ export const getAllGearSchema = z.object({
   query: z
     .object({
       categoryId: emptyToUndefined(cuidIdSchema.optional()),
+      category: emptyToUndefined(z.string().min(1).optional()),
       brand: emptyToUndefined(z.string().min(1).optional()),
       search: emptyToUndefined(z.string().min(1).optional()),
       minPrice: emptyToUndefined(z.coerce.number().nonnegative().optional()),
       maxPrice: emptyToUndefined(z.coerce.number().nonnegative().optional()),
+      sortBy: emptyToUndefined(z.string().optional()),
     })
     .superRefine((value, context) => {
       if (value.minPrice !== undefined && value.maxPrice !== undefined && value.minPrice > value.maxPrice) {

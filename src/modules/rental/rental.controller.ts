@@ -261,3 +261,71 @@ export const updateRentalStatus = catchAsync(async (req: Request, res: Response)
     data: updated,
   });
 });
+
+export const cancelRental = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user?.userId) {
+    throw new AppError(401, "Unauthorized request");
+  }
+
+  const rentalOrderId = String(req.params.id);
+
+  const rental = await prisma.rentalOrder.findUnique({
+    where: { id: rentalOrderId },
+    include: {
+      gearItem: true,
+    },
+  });
+
+  if (!rental) {
+    throw new AppError(404, "Rental order not found");
+  }
+
+  const isCustomer = rental.customerId === req.user.userId;
+  const isProvider = rental.gearItem.providerId === req.user.userId;
+  const isAdmin = req.user.role === Role.ADMIN;
+
+  if (!isCustomer && !isProvider && !isAdmin) {
+    throw new AppError(403, "You are not authorized to cancel this order");
+  }
+
+  if (rental.status === RentalOrderStatus.CANCELLED) {
+    throw new AppError(400, "Order is already cancelled");
+  }
+
+  if (rental.status === RentalOrderStatus.PICKED_UP || rental.status === RentalOrderStatus.RETURNED) {
+    throw new AppError(400, "Cannot cancel an order that is already picked up or returned");
+  }
+
+  const updated = await prisma.rentalOrder.update({
+    where: { id: rentalOrderId },
+    data: { status: RentalOrderStatus.CANCELLED },
+    include: {
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      gearItem: {
+        include: {
+          category: true,
+          provider: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      },
+      payment: true,
+    },
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Rental order cancelled successfully",
+    data: updated,
+  });
+});

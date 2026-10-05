@@ -61,11 +61,19 @@ export const createGear = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const getAllGear = catchAsync(async (req: Request, res: Response) => {
-  const categoryId = req.query.categoryId as string | undefined;
+  const categoryParam = (req.query.categoryId || req.query.category) as string | undefined;
   const brand = req.query.brand as string | undefined;
   const search = req.query.search as string | undefined;
   const minPrice = req.query.minPrice ? Number(req.query.minPrice) : undefined;
   const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : undefined;
+  const sortBy = req.query.sortBy as string | undefined;
+
+  let orderBy: any = { createdAt: "desc" };
+  if (sortBy === "price-low" || sortBy === "price_asc") {
+    orderBy = { pricePerDay: "asc" };
+  } else if (sortBy === "price-high" || sortBy === "price_desc") {
+    orderBy = { pricePerDay: "desc" };
+  }
 
   const isProviderRoute = req.baseUrl.includes("/provider/gear");
   const providerId = isProviderRoute && req.user?.userId ? req.user.userId : undefined;
@@ -73,7 +81,15 @@ export const getAllGear = catchAsync(async (req: Request, res: Response) => {
   const gearItems = await prisma.gearItem.findMany({
     where: {
       ...(providerId ? { providerId } : {}),
-      ...(categoryId ? { categoryId } : {}),
+      ...(categoryParam
+        ? {
+            OR: [
+              { categoryId: categoryParam },
+              { category: { slug: categoryParam } },
+              { category: { name: { equals: categoryParam, mode: "insensitive" } } },
+            ],
+          }
+        : {}),
       ...(brand ? { brand: { contains: brand, mode: "insensitive" } } : {}),
       ...(search
         ? {
@@ -112,7 +128,7 @@ export const getAllGear = catchAsync(async (req: Request, res: Response) => {
         },
       },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy,
   });
 
   res.status(200).json({

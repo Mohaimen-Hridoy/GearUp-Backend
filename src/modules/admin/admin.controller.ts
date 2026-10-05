@@ -119,3 +119,45 @@ export const getAdminRentals = catchAsync(async (_req: Request, res: Response) =
     data: rentals,
   });
 });
+
+export const getAdminStats = catchAsync(async (_req: Request, res: Response) => {
+  const [totalUsers, customerCount, providerCount, totalGear, availableGear, rentals] = await Promise.all([
+    prisma.user.count(),
+    prisma.user.count({ where: { role: "CUSTOMER" } }),
+    prisma.user.count({ where: { role: "PROVIDER" } }),
+    prisma.gearItem.count(),
+    prisma.gearItem.count({ where: { isAvailable: true } }),
+    prisma.rentalOrder.findMany({
+      select: {
+        status: true,
+        totalPrice: true,
+      },
+    }),
+  ]);
+
+  const totalVolume = rentals.reduce((acc, order) => acc + Number(order.totalPrice.toString()), 0);
+  const activeRentals = rentals.filter((r) => ["CONFIRMED", "PAID", "PICKED_UP"].includes(r.status)).length;
+  const completedRentals = rentals.filter((r) => r.status === "RETURNED").length;
+
+  res.status(200).json({
+    success: true,
+    message: "Admin statistics retrieved successfully",
+    data: {
+      users: {
+        total: totalUsers,
+        customers: customerCount,
+        providers: providerCount,
+      },
+      gear: {
+        total: totalGear,
+        available: availableGear,
+      },
+      rentals: {
+        total: rentals.length,
+        active: activeRentals,
+        completed: completedRentals,
+        totalVolume,
+      },
+    },
+  });
+});

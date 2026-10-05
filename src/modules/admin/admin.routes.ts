@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
   getAdminGear,
   getAdminRentals,
+  getAdminStats,
   getUsers,
   updateUserStatus,
 } from "./admin.controller";
@@ -12,6 +13,7 @@ import { adminUserIdParamsSchema, updateUserStatusSchema } from "./admin.validat
 
 const router = Router();
 
+router.get("/stats", auth(Role.ADMIN), getAdminStats);
 router.get("/users", auth(Role.ADMIN), getUsers);
 router.patch("/users/:id", auth(Role.ADMIN), validateRequest(adminUserIdParamsSchema), validateRequest(updateUserStatusSchema), updateUserStatus);
 router.get("/gear", auth(Role.ADMIN), getAdminGear);
