@@ -188,12 +188,13 @@ Admin@12345
 - POST /api/rentals
 - GET /api/rentals
 - GET /api/rentals/:id
+- PATCH /api/rentals/:id/cancel  *(Customer, Provider, or Admin cancellation)*
 - GET /api/provider/orders
-- PATCH /api/provider/orders/:id
+- PATCH /api/provider/orders/:id *(Update status: CONFIRMED, PICKED_UP, RETURNED, CANCELLED)*
 
 ### Payments
 
-- POST /api/payments/create
+- POST /api/payments/create *(Stripe & Demo payment simulation fallback)*
 - POST /api/payments/confirm
 - GET /api/payments
 - GET /api/payments/:id
@@ -204,8 +205,9 @@ Admin@12345
 
 ### Admin
 
+- GET /api/admin/stats *(Platform aggregate statistics: users, gear, rentals, revenue)*
 - GET /api/admin/users
-- PATCH /api/admin/users/:id
+- PATCH /api/admin/users/:id *(Change status: ACTIVE / SUSPENDED)*
 - GET /api/admin/gear
 - GET /api/admin/rentals
 
